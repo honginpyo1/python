@@ -1,14 +1,27 @@
 from flask import Flask, jsonify, request
+from flask.json import JSONEncoder
 
+
+## Default JSON encoder는 set을 JSON으로 변환할 수 없다.
+## 그러므로 커스텀 엔코더를 작성해서 set을 list로 변환하여 JSON으로 변환 가능하게 해줘야한다.
+class CustomJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        
+        return JSONEncoder.default(self, obj)
+    
 app = Flask(__name__)
 app.users = {}
 app.id_count = 1
+app.tweets = []
+app.json_encoder = CustomJSONEncoder
 
-@app.route("/ping", methods=['GET'])
+@app.route('/ping', methods=['GET'])
 def ping():
     return "pong"
 
-@app.route("/sign-up", methods=['POST'])
+@app.route('/sign-up', methods=['POST'])
 def sign_up():
     new_user    = request.json
     new_user["id"] = app.id_count
@@ -17,9 +30,7 @@ def sign_up():
     
     return jsonify(new_user)
 
-app.tweets = []
-
-@app.route("/tweet", methods=['POST'])
+@app.route('/tweet', methods=['POST'])
 def tweet():
     payload = request.json
     user_id = int(payload['id'])
@@ -39,3 +50,45 @@ def tweet():
     })
     
     return '', 200
+
+@app.route('/follow', methods=['POST'])
+def follow():
+    payload = request.json
+    user_id = int(payload['id'])
+    user_id_to_follow = int(payload['follow'])
+    
+    if user_id not in app.users or user_id_to_follow not in app.users:
+        return '사용자가 존재하지 않습니다.', 400
+    
+    user = app.users[user_id]
+    user.setdefault('follow', set()).add(user_id_to_follow)
+    
+    return jsonify(user)
+
+@app.route('/unfollow', methods=['POST'])
+def unfollow():
+    payload = request.json
+    user_id = int(payload['id'])
+    user_id_to_follow = int(payload['unfollow'])
+    
+    if user_id not in app.users or user_id_to_follow not in app.users:
+        return '사용자가 존재하지 않습니다.', 400
+    
+    user = app.users[user_id]
+    user.setdefault('follow', set()).discard(user_id_to_follow)
+    
+    return jsonify(user)
+
+@app.route('/timeline/<int:user_id>', methods=['GET'])
+def timeline(user_id):
+    if user_id not in app.users:
+        return '사용자가 존재하지 않습니다.', 400
+    
+    follow_list = app.users[user_id].get('follow', set())
+    follow_list.add(user_id)
+    timeline = [tweet for tweet in app.tweets if tweet['user_id'] in follow_list]
+    
+    return jsonify({
+        'user_id' : user_id,
+        'timeline' :timeline
+    })
