@@ -1,0 +1,6 @@
+[submodule "miniter/miniter/python-tutorial-frontend"]
+	path = miniter/miniter/python-tutorial-frontend
+	url = https://github.com/honginpyo1/python
+[submodule "miniter/frontend/python-tutorial-frontend"]
+	path = miniter/frontend/python-tutorial-frontend
+	url = https://github.com/honginpyo1/python
