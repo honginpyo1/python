@@ -32,7 +32,7 @@ def insert_user(user):
         """), user).lastrowid
 
 def get_user(user_id):
-    row = current_app.database.execute(text("""
+    user = current_app.database.execute(text("""
     SELECT
         id,
         name,
@@ -45,11 +45,11 @@ def get_user(user_id):
     }).fetchone()
 
     return {
-        'id' : row['id'],
-        'name' : row['name'],
-        'email' : row['email'],
-        'profile' : row['profile']
-    } if row else None
+        'id' : user['id'],
+        'name' : user['name'],
+        'email' : user['email'],
+        'profile' : user['profile']
+    } if user else None
 
 def get_user_id_and_password(email):
     row = current_app.database.execute(text("""
@@ -185,7 +185,8 @@ def create_app(test_config = None):
             token = jwt.encode(payload, app.config['JWT_SECRET_KEY'],'HS256')
             
             return jsonify({
-                'access_token' : token.decode('UTF-8')
+                'access_token' : token.decode('UTF-8'),
+                'user_id' : user_id
             })
         else:
             return '', 401
@@ -208,6 +209,8 @@ def create_app(test_config = None):
     @login_required
     def follow():
         payload = request.json
+        payload['id'] = g.user_id
+        
         insert_follow(payload)
         
         return '', 200
@@ -216,6 +219,8 @@ def create_app(test_config = None):
     @login_required
     def unfollow():
         payload = request.json
+        payload['id'] = g.user_id
+        
         insert_unfollow(payload)
         
         return '', 200
