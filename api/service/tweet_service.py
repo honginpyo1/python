@@ -1,6 +1,6 @@
 
 class TweetService:
-    def __init(self, tweet_dao):
+    def __init__(self, tweet_dao):
         self.tweet_dao = tweet_dao
         
     def tweet(self, user_id, tweet):

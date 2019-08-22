@@ -1,8 +1,10 @@
 import jwt
+import config
 
-from flask import Flask, jsonify, request, current_app, Response, g
-from flask.json import JSONEncoder
-from functools import wraps
+from flask          import request, jsonify, current_app, Response, g, send_file
+from flask.json     import JSONEncoder
+from functools      import wraps
+from werkzeug.utils import secure_filename
 
 
 
@@ -25,7 +27,7 @@ def login_required(f):
         access_token = request.headers.get('Authorization')
         if access_token is not None:
             try:
-                payload = jwt.decode(access_token, current_app.config['JWT_SECRET_KEY'], 'HS256')
+                payload = jwt.decode(access_token, config.config['JWT_SECRET_KEY'], 'HS256')
             except jwt.InvalidTokenError:
                 payload = None
                 
@@ -33,7 +35,6 @@ def login_required(f):
             
             user_id = payload['user_id']
             g.user_id = user_id
-            g.user = get_user(user_id) if user_id else None
         else:
             return Response(status=401)
         
@@ -63,12 +64,12 @@ def create_endpoints(app, services):
         authorized = user_service.login(credential)
         
         if authorized:
-            user_credential = user_service.get_user_id_and_password(credentail['email'])
+            user_credential = user_service.get_user_id_and_password(credential['email'])
             user_id = user_credential['id']
             token = user_service.generate_access_token(user_id)
             
             return jsonify({
-                'access_token' : token
+                'access_token' : token,
                 'user_id' : user_id
             })
         else:
@@ -129,3 +130,31 @@ def create_endpoints(app, services):
             'user_id' : user_id,
             'timeline' : timeline
         })
+    
+    @app.route('/profile-picture', methods=['POST'])
+    @login_required
+    def upload_profile_picture():
+        user_id = g.user_id
+        
+        if 'profile_pic' not in request.files:
+            return 'File is missing', 404
+        
+        profile_pic = request.files['profile_pic']
+        
+        if profile_pic.filename == '':
+            return 'File is missing', 404
+        
+        filename = secure_filename(profile_pic.filename)
+        user_service.save_profile_picture(profile_pic, filename, user_id)
+        
+        return '', 200
+        
+        
+    @app.route('/profile-picture/<int:user_id>', methods=['GET'])
+    def get_profile_picture(user_id):
+        profile_picture = user_service.get_profile_picture(user_id)
+        
+        if profile_picture:
+            return send_file(profile_picture)
+        else:
+            return '', 404
