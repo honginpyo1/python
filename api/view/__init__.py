@@ -86,7 +86,7 @@ def create_endpoints(app, services):
         if result is None:
             return '300자를 초과했습니다.', 400
         
-        insert_tweet(user_tweet)
+        tweet_service.insert_tweet(user_tweet)
         
         return '', 200
 
