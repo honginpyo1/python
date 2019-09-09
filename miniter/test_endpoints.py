@@ -73,6 +73,8 @@ def test_tweet(api):
     )
     assert resp.status_code == 200
     
+    new_user_id = 1
+    
     ## tweet 확인
     resp = api.get(f'/timeline/{new_user_id}')
     tweets = json.loads(resp.data.decode('utf-8'))

@@ -127,7 +127,7 @@ def create_endpoints(app, services):
         timeline = tweet_service.get_timeline(g.user_id)
         
         return jsonify({
-            'user_id' : user_id,
+            'user_id' : g.user_id,
             'timeline' : timeline
         })
     
